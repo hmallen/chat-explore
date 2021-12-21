@@ -3,6 +3,8 @@ import warnings
 
 import pandas as pd
 
+from pymongo import MongoClient
+
 # sys.path.insert(0, ".")
 from action_logging import Logger
 
@@ -10,12 +12,11 @@ warnings.filterwarnings("ignore")
 
 
 class Preprocess:
-    def __init__(self, input_file, logger=None):
+    def __init__(self, config, logger=None):
         """
         Initialize Preprocess class
-        :param input_file:
+        :param config:
         """
-        self.file = input_file
         if logger is None:
             self.logger = Logger(
                 log_flag=True, log_file="preprocess", log_path="../logs/"
@@ -28,29 +29,24 @@ class Preprocess:
         self.data_backup = None
         self.pd_data = None
 
+        mongo_client = MongoClient(config["mongo"]["connection_uri"])
+        mongo_db = mongo_client[config["mongo"]["db"]]
+        self.mongo_collection = mongo_db[config["mongo"]["collection"]]
+
     def load_data(self):
         """
-        Reads in the file in UTF-8 encoding and splits into lines
+        Reads in the array of dicts in UTF-8, parses, and formats
         Also, takes backup just to have control on things.
         :return:
         """
-        self.logger.write_logger(
-            "In preprocess.py (read_file): Reading of input file: "
-            + self.file
-            + " starts"
-        )
-        f = open(self.file, "r", encoding="utf8")
-        self.data = f.read()
-        f.close()
-        self.data = self.data.splitlines()
+        self.logger.write_logger("In preprocess.py (load_data): Loading data.")
+
+        mongo_data = self.mongo_collection.find({})
 
         # Save temporary value
         self.data_backup = self.data.copy()
-        self.logger.write_logger(
-            "In preprocess.py (read_file): Reading of input file: "
-            + self.file
-            + " ends"
-        )
+
+        self.logger.write_logger("In preprocess.py (load_data): Data load complete.")
 
     def print_sample(self, n_lines=10):
         """
@@ -70,103 +66,7 @@ class Preprocess:
             + " lines) ends"
         )
 
-    def add_missing_info(self, current_line, previous_line):
-        """
-        Add timestamp, username from previous line
-        :param current_line:
-        :param previous_line:
-        :return:
-        """
-        previous_line_ts = previous_line.split("-")[0].strip()
-        previous_line_name = previous_line.split("-")[1].strip().split(":")[0].strip()
-        current_line = (
-            previous_line_ts + " - " + previous_line_name + ": " + current_line
-        )
-        return current_line
-
-    def clean_data(self, log=False):
-        """
-        Cleans data by adding missing information
-        :return:
-        """
-        self.logger.write_logger(
-            "In preprocess.py (clean_data): Cleaning of data starts"
-        )
-        # self.data = self.data_backup.copy()
-        for idx, line in enumerate(self.data):
-            split_part = line.split("-")
-            if len(split_part) <= 1:
-                if log:
-                    self.logger.write_logger(f"== Before Condition 1: {self.data[idx]}")
-                self.data[idx] = self.add_missing_info(
-                    self.data[idx], self.data[idx - 1]
-                )
-                if log:
-                    self.logger.write_logger(
-                        f"== After Condition 1: {self.data[idx-1]}"
-                    )
-                    self.logger.write_logger(f"== After Condition 1: {self.data[idx]}")
-            else:
-                split_part = split_part[0].strip()
-                split_part = split_part.split(",")
-                if len(split_part) < 2:
-                    if log:
-                        self.logger.write_logger(
-                            f"== Before Condition 2: Current line: {self.data[idx]}, Previous line: {self.data[idx - 1]}"
-                        )
-                    self.data[idx] = self.add_missing_info(
-                        self.data[idx], self.data[idx - 1]
-                    )
-                    if log:
-                        self.logger.write_logger(
-                            f"== After Condition 2: {self.data[idx-1]}"
-                        )
-                        self.logger.write_logger(
-                            f"== After Condition 2: {self.data[idx]}"
-                        )
-                else:
-                    split_part = split_part[1].strip()
-                    split_part = split_part.split(" ")
-                    if len(split_part) < 2:
-                        if log:
-                            self.logger.write_logger(
-                                f"== Before Condition 3: {self.data[idx]}"
-                            )
-                        self.data[idx] = self.add_missing_info(
-                            self.data[idx], self.data[idx - 1]
-                        )
-                        if log:
-                            self.logger.write_logger(
-                                f"== After Condition 3: {self.data[idx-1]}"
-                            )
-                            self.logger.write_logger(
-                                f"== After Condition 3: {self.data[idx]}"
-                            )
-                    else:
-                        split_part = split_part[1].strip()
-                        if split_part.lower() != "am" and split_part.lower() != "pm":
-                            if log:
-                                self.logger.write_logger(
-                                    f"== Before Condition 4: {self.data[idx]}"
-                                )
-                            self.data[idx] = self.add_missing_info(
-                                self.data[idx], self.data[idx - 1]
-                            )
-                            if log:
-                                self.logger.write_logger(
-                                    f"== After Condition 4: {self.data[idx-1]}"
-                                )
-                                self.logger.write_logger(
-                                    f"== After Condition 4: {self.data[idx]}"
-                                )
-                        else:
-                            "No correction needed"
-        self.logger.write_logger("In preprocess.py (clean_data): Cleaning of data ends")
-
-    def drop_message(
-        self,
-        contains="Messages to this chat and calls are now secured with end-to-end encryption",
-    ):
+    def drop_message(self, contains):
         """
         Drops the message if it contains the text given in parameter
         :param contains:
@@ -177,7 +77,9 @@ class Preprocess:
             + contains
             + " starts"
         )
+
         self.data = [line for line in self.data if contains not in line]
+
         self.logger.write_logger(
             "In preprocess.py (drop_message): Dropping message containing: "
             + contains
