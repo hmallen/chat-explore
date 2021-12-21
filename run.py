@@ -42,7 +42,8 @@ def preprocess_data(filePath, logger):
     """
     # Load and Clean the data ------------------------------------------------------------------------------------------
     preprocess = Preprocess(input_file = filePath, logger = logger)
-    preprocess.read_file()
+
+    preprocess.load_data()
     preprocess.drop_message(). \
         drop_message(contains = "security code changed"). \
         drop_message(contains = "Missed group voice call"). \
@@ -53,9 +54,10 @@ def preprocess_data(filePath, logger):
         drop_message(contains = ".vcf (file attached)")
     preprocess.clean_data(True)
     preprocess.prepare_df()
-    preprocess.check_n_users()
-    preprocess.remove_forward_messages(min_length = 15)
+    # preprocess.check_n_users()
+    # preprocess.remove_forward_messages(min_length = 15)
     # preprocess.write_data()
+
     return preprocess
 
 
@@ -83,6 +85,7 @@ def user_wise_analysis(preprocess, logger):
             timestamp = user_subset_data['Timestamp'],
             users = user_subset_data['User'],
             logger = logger)
+
         user_data.get_clean_messages(). \
             get_message_sentiment(). \
             get_top_sentiments(k = 2). \
@@ -97,10 +100,13 @@ def user_wise_analysis(preprocess, logger):
 
         # Plot user statistics -----------------------------------------------------------------------------------------
         plot_user_obj = PlotUser(user_object = user_data, user_idx = user_idx + 1)
+
         plot_user_obj.plot_top_k_ngrams(n_grams = 1, k = 10)
         plot_user_obj.plot_top_k_ngrams(n_grams = 2, k = 10)
         plot_user_obj.plot_top_k_ngrams(n_grams = 3, k = 10)
+
         user_data.pd_emoji_rank = plot_user_obj.plot_top_k_emojis(k = 5, normalize = True)
+
         plot_user_obj.plot_word_cloud()
         plot_user_obj.plot_word_cloud(n_grams = 2)
         plot_user_obj.plot_word_cloud(n_grams = 3)
@@ -108,6 +114,7 @@ def user_wise_analysis(preprocess, logger):
         user_data_list.append(user_data)
 
         logger.write_logger(f"Ending for User: {user}")
+
     return user_data_list
 
 
@@ -119,11 +126,13 @@ def plot_overall(preprocess, user_data_list):
     :return:
     """
     plot_obj = Plot(data = preprocess.pd_data, color_map = preprocess.color_map)
+
     plot_obj.plot_date_n_msgs()
     plot_obj.plot_weekday_n_msgs()
     plot_obj.plot_hour_n_msgs()
     plot_obj.plot_domain_counts(user_object = user_data_list[-1])
     plot_obj.plot_date_n_emojis(user_object = user_data_list[-1])
+
     # TODO: Add body to the media count method
     # plot_obj.plot_media_counts(user_object = user_data_list[-1])
 
@@ -156,6 +165,7 @@ def generate_html(user_data_list):
         populate_html_txt(). \
         populate_html_img(). \
         save_html()
+
     return html_obj.file_name
 
 
