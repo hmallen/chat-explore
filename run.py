@@ -33,7 +33,6 @@ from delete_files import DeleteFiles
 import configparser
 
 
-# Methods to be run ----------------------------------------------------------------------------------------------------
 def preprocess_data(config, logger):
     """
     Remove the below messages
@@ -45,25 +44,9 @@ def preprocess_data(config, logger):
     preprocess = Preprocess(config=config, logger=logger)
 
     preprocess.load_data()
-
-    preprocess.drop_message().drop_message(
-        contains="security code changed"
-    ).drop_message(contains="Missed group voice call").drop_message(
-        contains="Missed voice call"
-    ).drop_message(
-        contains="Missed video call"
-    ).drop_message(
-        contains="Missed group video call"
-    ).drop_message(
-        contains="live location shared"
-    ).drop_message(
-        contains=".vcf (file attached)"
-    )
-    preprocess.clean_data(True)
     preprocess.prepare_df()
-    # preprocess.check_n_users()
-    # preprocess.remove_forward_messages(min_length=15)
     preprocess.write_data()
+    
     return preprocess
 
 
@@ -166,10 +149,8 @@ def generate_html(user_data_list):
 
 
 if __name__ == "__main__":
-    # Setup Logger -----------------------------------------------------------------------------------------------------
     logger = Logger(log_flag=True, log_file="run", log_path="logs/")
 
-    # Load command line arguments --------------------------------------------------------------------------------------
     parser = ArgumentParser(formatter_class=RawTextHelpFormatter)
     parser.add_argument(
         "-c",
@@ -185,25 +166,24 @@ if __name__ == "__main__":
     config = configparser.RawConfigParser()
     config.read(config_path)
 
-    # Preprocess the data ----------------------------------------------------------------------------------------------
     preprocess = preprocess_data(config, logger)
 
-    # User wise Analysis -----------------------------------------------------------------------------------------------
+    # User wise Analysis
     user_data_list = user_wise_analysis(preprocess, logger)
 
-    # Plot the Overall Stats -------------------------------------------------------------------------------------------
+    # Plot the Overall Stats
     plot_overall(preprocess, user_data_list)
 
-    # Plot the Progression ---------------------------------------------------------------------------------------------
+    # Plot the Progression
     plot_progression(preprocess, user_data_list)
 
-    # Generate HTML ----------------------------------------------------------------------------------------------------
+    # Generate HTML
     output_file = generate_html(user_data_list)
 
-    # Delete Logs and Plots to save memory -----------------------------------------------------------------------------
+    # Delete Logs and Plots to save memory
     DeleteFiles(path_list=("plots/", "logs/")).delete()
 
-    # Open in browser --------------------------------------------------------------------------------------------------
+    # Open in browser
     if not isTextBasedBrowser(webbrowser.get()):
         try:
             logger.write_logger(f"Opening {output_file} in browser.")

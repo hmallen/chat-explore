@@ -1,5 +1,6 @@
 {
     "nxConsole.enableTelemetry": false,
     "nxConsole.useNVM": true,
-    "python.formatting.provider": "black"
+    "python.formatting.provider": "black",
+    "jupyter.jupyterServerType": "local"
 }
