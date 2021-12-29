@@ -2,3 +2,4 @@ data/*
 settings.conf
 src/__pycache__
 logs/*
+notebooks/plots/

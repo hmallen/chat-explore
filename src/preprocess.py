@@ -114,7 +114,7 @@ class Preprocess:
 
                 if log:
                     self.logger.write_logger(
-                        f"== After Condition 1: {self.data[idx-1]}"
+                        f"== After Condition 1: {self.data["""idx-1]}"
                     )
                     self.logger.write_logger(f"== After Condition 1: {self.data[idx]}")
 
@@ -244,23 +244,23 @@ class Preprocess:
 
         self.pd_data = pd.DataFrame(
             {
-                "timestamp": timestamps,
-                "weekday": weekdays,
-                "user": user_names,
-                "user_id": user_ids,
-                "message": messages,
-                "channel": channels,
-                "user_avatar": user_avatars,
+                "Timestamp": timestamps,
+                "Weekday": weekdays,
+                "User": user_names,
+                "User ID": user_ids,
+                "Message": messages,
+                "Channel": channels,
+                "User Avatar": user_avatars,
             }
         )[
             [
-                "timestamp",
-                "weekday",
-                "user",
-                "user_id",
-                "message",
-                "channel",
-                "user_avatar",
+                "Timestamp",
+                "Weekday",
+                "User",
+                "User ID",
+                "Message",
+                "Channel",
+                "User Avatar",
             ]
         ]
 
@@ -271,12 +271,12 @@ class Preprocess:
         else:
             self.pd_data["timestamp"] = pd.to_datetime(
                 self.pd_data["timestamp"].str.lower(), format="%m/%d/%y, %I:%M %p"
-            )
+            )"""
 
-        self.pd_data["date"] = self.pd_data["timestamp"].dt.strftime("%d-%b-%Y")
-        self.pd_data["weekday"] = self.pd_data["timestamp"].dt.strftime("%a")"""
+        self.pd_data["Date"] = self.pd_data["Timestamp"].dt.strftime("%d-%b-%Y")
+        # self.pd_data["weekday"] = self.pd_data["timestamp"].dt.strftime("%a")
 
-        self.user_names = list(set(user_names))
+        self.users = list(set(user_names))
 
         self.logger.write_logger(
             "In preprocess.py (prepare_df): Preparation of data frame ends"
